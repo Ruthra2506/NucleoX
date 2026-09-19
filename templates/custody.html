@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🔗 Blockchain-Backed Chain of Custody</h1>
+    <p class="page-description">Module 5 — Cryptographic SHA-256 hash-chain append-only ledger for evidence tracking and tamper verification.</p>
+</div>
+
+<!-- MANDATORY BLOCKCHAIN DISCLAIMER LABEL -->
+<div class="disclaimer-banner" style="background: rgba(139, 92, 246, 0.1); border-left-color: var(--secondary); color: #d8b4fe;">
+    <span style="font-size: 1.2rem;">🔗</span>
+    <div>
+        <strong>BLOCKCHAIN DISCLAIMER:</strong> Simplified hash-chain simulation for demonstration purposes — not a production blockchain network.
+    </div>
+</div>
+
+<!-- VERIFICATION BANNER & CONTROLS -->
+<div class="nucleox-card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h3 style="color: var(--text-bright); font-size: 1.15rem; margin-bottom: 0.2rem;">🛡️ Chain Integrity Status</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Cryptographically verifies previous_hash links and data SHA-256 payload hashes.</p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <button id="verify-chain-btn" class="btn-nucleox" style="background: linear-gradient(135deg, var(--accent-emerald), var(--primary)); font-size: 0.9rem;">
+                🔍 Verify Chain Integrity
+            </button>
+        </div>
+    </div>
+
+    <!-- Verification Result Feedback Box -->
+    <div id="verify-result-box" style="margin-top: 1rem; padding: 1rem; border-radius: 8px; font-size: 0.95rem; {% if verification.is_valid %}background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399;{% else %}background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.5); color: #fda4af;{% endif %}">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span>{% if verification.is_valid %}✅{% else %}🚨{% endif %}</span>
+            <strong>{{ verification.message }}</strong>
+        </div>
+    </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="nucleox-card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="color: var(--primary); font-size: 1.05rem;">🔍 Filter Blocks by Sample ID</h3>
+
+        <form action="{{ url_for('custody') }}" method="GET">
+            <select name="sample_ref_id" class="form-control" onchange="this.form.submit();" style="width: 280px;">
+                <option value="">-- View Complete Ledger (All Blocks) --</option>
+                {% for s in samples %}
+                    <option value="{{ s.id }}" {% if s.id == selected_id %}selected{% endif %}>
+                        {{ s.label }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+</div>
+
+<!-- TIMELINE OF SHA-256 HASH BLOCKS -->
+<div class="nucleox-card">
+    <h3 style="color: var(--text-bright); margin-bottom: 1.5rem; font-size: 1.2rem;">
+        Custody Ledger Blocks Timeline
+        {% if selected_id %} for <span style="color: var(--primary);">{{ selected_id }}</span>{% endif %}
+    </h3>
+
+    {% if blocks %}
+        <div class="timeline">
+            {% for block in blocks %}
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content" style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem;">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <span class="badge-status complete" style="font-family: var(--font-mono); font-size: 0.8rem;">
+                                Block #{{ block.block_index }}
+                            </span>
+                            <strong style="color: var(--primary); font-size: 1.05rem;">{{ block.event_name }}</strong>
+                            <span class="badge-status" style="background: rgba(139, 92, 246, 0.15); border-color: var(--secondary); color: #c084fc; font-size: 0.75rem;">
+                                {{ block.sample_ref_id }} ({{ block.sample_ref_type }})
+                            </span>
+                        </div>
+                        <div class="timeline-time">{{ block.event_timestamp }}</div>
+                    </div>
+
+                    <!-- Cryptographic Hash Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; background: rgba(9, 13, 22, 0.8); padding: 0.75rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.78rem;">
+                        <div>
+                            <span style="color: var(--text-muted); display: block; font-size: 0.7rem; text-transform: uppercase;">Current Block Hash (SHA-256)</span>
+                            <strong style="color: var(--primary);" title="{{ block.block_hash }}">
+                                {{ block.block_hash[:16] }}...{{ block.block_hash[-8:] }}
+                            </strong>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted); display: block; font-size: 0.7rem; text-transform: uppercase;">Previous Block Hash</span>
+                            <span style="color: var(--text-main);" title="{{ block.previous_hash }}">
+                                {% if block.previous_hash == '0' %}
+                                    <span style="color: var(--accent-amber);">0 (Genesis)</span>
+                                {% else %}
+                                    {{ block.previous_hash[:16] }}...
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted); display: block; font-size: 0.7rem; text-transform: uppercase;">Event Payload Hash</span>
+                            <span style="color: var(--secondary);" title="{{ block.data_hash }}">
+                                {{ block.data_hash[:16] }}...
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            No custody blocks found for this selection in the blockchain ledger.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

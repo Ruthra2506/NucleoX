@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🧪 Evidence Registration</h1>
+    <p class="page-description">Module 1 — Log new physical DNA evidence into the NucleoX database and initiate chain-of-custody tracking.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; align-items: start;">
+    <!-- REGISTRATION FORM -->
+    <div class="nucleox-card">
+        <h3 style="color: var(--primary); margin-bottom: 1.25rem; font-size: 1.1rem;">📝 New Sample Entry</h3>
+
+        <form action="{{ url_for('register') }}" method="POST">
+            <div class="form-group">
+                <label class="form-label" for="evidence_id">Evidence ID (Auto-Generated)</label>
+                <input type="text" id="evidence_id" name="evidence_id" class="form-control" value="{{ next_id }}" required style="font-weight: bold; color: var(--primary);">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="sample_type">Sample Type</label>
+                <select id="sample_type" name="sample_type" class="form-control" required>
+                    <option value="Blood">Blood</option>
+                    <option value="Saliva">Saliva</option>
+                    <option value="Hair">Hair</option>
+                    <option value="Touch DNA">Touch DNA</option>
+                    <option value="Tissue">Tissue</option>
+                    <option value="Buccal Swab">Buccal Swab</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="operator">Operator ID / Name</label>
+                <input type="text" id="operator" name="operator" class="form-control" placeholder="e.g. OP-402 (Dr. Vance)" value="OP-402 (Dr. Vance)" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="collection_time">Collection Date & Time</label>
+                <input type="text" id="collection_time" name="collection_time" class="form-control" placeholder="YYYY-MM-DD HH:MM:SS" style="font-family: var(--font-mono);">
+                <script>
+                    // Auto-fill current timestamp
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const dtInput = document.getElementById('collection_time');
+                        if (dtInput && !dtInput.value) {
+                            const now = new Date();
+                            dtInput.value = now.toISOString().slice(0, 19).replace('T', ' ');
+                        }
+                    });
+                </script>
+            </div>
+
+            <button type="submit" class="btn-nucleox" style="width: 100%; margin-top: 0.5rem;">
+                💾 Register Evidence & Log Collection
+            </button>
+        </form>
+    </div>
+
+    <!-- REGISTERED SAMPLES TABLE -->
+    <div class="nucleox-card">
+        <h3 style="color: var(--text-bright); margin-bottom: 1rem; font-size: 1.1rem;">📋 Registered Evidence Catalog</h3>
+        
+        <div class="table-responsive">
+            <table class="nucleox-table">
+                <thead>
+                    <tr>
+                        <th>Evidence ID</th>
+                        <th>Sample Type</th>
+                        <th>Operator</th>
+                        <th>Collection Timestamp</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sample in samples %}
+                    <tr>
+                        <td><strong style="color: var(--primary);">{{ sample.evidence_id }}</strong></td>
+                        <td>{{ sample.sample_type }}</td>
+                        <td>{{ sample.operator }}</td>
+                        <td style="font-family: var(--font-mono); font-size: 0.85rem;">{{ sample.collection_time }}</td>
+                        <td>
+                            {% if sample.status == 'Registered' %}
+                                <span class="badge-status registered">Registered</span>
+                            {% elif sample.status == 'PCR Running' %}
+                                <span class="badge-status running">⚡ PCR Running</span>
+                            {% elif sample.status == 'PCR Complete' %}
+                                <span class="badge-status complete">✓ PCR Complete</span>
+                            {% elif sample.status == 'Profile Generated' %}
+                                <span class="badge-status profiled">🧬 Profile Stored</span>
+                            {% else %}
+                                <span class="badge-status compared">⚖️ {{ sample.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                            No evidence samples registered yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

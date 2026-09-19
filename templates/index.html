@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- SPLASH SCREEN OVERLAY ON FIRST LOAD -->
+<div id="splash-screen">
+    <div class="splash-content">
+        <div class="splash-logo-container">
+            <div class="splash-dna-icon">🧬</div>
+        </div>
+        <h1 class="splash-title">NucleoX</h1>
+        <div class="splash-tagline">On-Spot DNA Analysis System</div>
+        <div class="splash-loader-bar">
+            <div class="splash-loader-progress"></div>
+        </div>
+    </div>
+</div>
+
+<div class="page-header">
+    <h1 class="page-title">📊 System Dashboard</h1>
+    <p class="page-description">Overview of evidence samples, reference samples, live PCR device telemetry, forensic profiles, and custody logs.</p>
+</div>
+
+<!-- METRIC CARDS GRID -->
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-icon cyan">🧪</div>
+        <div>
+            <div class="metric-val">{{ total_evidence }}</div>
+            <div class="metric-label">Evidence Samples</div>
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon purple">👤</div>
+        <div>
+            <div class="metric-val">{{ total_reference }}</div>
+            <div class="metric-label">Reference Samples</div>
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon amber">⚡</div>
+        <div>
+            <div class="metric-val">{{ pcr_running }}</div>
+            <div class="metric-label">Active PCR Runs</div>
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon emerald">🧬</div>
+        <div>
+            <div class="metric-val">{{ profiles_count }}</div>
+            <div class="metric-label">DNA Profiles</div>
+        </div>
+    </div>
+</div>
+
+<!-- QUICK ACTION BUTTONS -->
+<div class="nucleox-card" style="margin-bottom: 2rem;">
+    <h3 style="color: var(--text-bright); margin-bottom: 1rem; font-size: 1.1rem;">🚀 Quick Operations</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+        <a href="{{ url_for('register') }}" class="btn-nucleox">🧪 Register Evidence</a>
+        <a href="{{ url_for('register_reference') }}" class="btn-nucleox">👤 Register Reference</a>
+        <a href="{{ url_for('device') }}" class="btn-nucleox btn-nucleox-secondary">⚡ Run Device Monitor</a>
+        <a href="{{ url_for('profiles') }}" class="btn-nucleox btn-nucleox-secondary">🧬 STR Profiling</a>
+        <a href="{{ url_for('compare') }}" class="btn-nucleox btn-nucleox-secondary">⚖️ Compare Profiles</a>
+        <a href="{{ url_for('custody') }}" class="btn-nucleox btn-nucleox-secondary">🔗 Chain of Custody</a>
+    </div>
+</div>
+
+<!-- TABLE 1: EVIDENCE SAMPLES -->
+<div class="nucleox-card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+            <h3 style="color: var(--text-bright); font-size: 1.2rem;">🧪 Crime Scene Evidence Inventory</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Evidence collected from crime scenes for DNA processing</p>
+        </div>
+        <a href="{{ url_for('register') }}" class="btn-nucleox" style="padding: 0.4rem 0.9rem; font-size: 0.85rem;">+ New Evidence</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="nucleox-table">
+            <thead>
+                <tr>
+                    <th>Evidence ID</th>
+                    <th>Sample Type</th>
+                    <th>Operator ID</th>
+                    <th>Collection Time</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sample in evidence_samples %}
+                <tr>
+                    <td><strong style="color: var(--primary);">{{ sample.evidence_id }}</strong></td>
+                    <td><span class="badge-status" style="background: rgba(6, 182, 212, 0.1); border-color: var(--primary); color: #38bdf8;">{{ sample.sample_type }}</span></td>
+                    <td>{{ sample.operator }}</td>
+                    <td style="font-family: var(--font-mono); font-size: 0.85rem;">{{ sample.collection_time }}</td>
+                    <td>
+                        {% if sample.status == 'Registered' %}
+                            <span class="badge-status registered">Registered</span>
+                        {% elif sample.status == 'PCR Running' %}
+                            <span class="badge-status running">⚡ PCR Running</span>
+                        {% elif sample.status == 'PCR Complete' %}
+                            <span class="badge-status complete">✓ PCR Complete</span>
+                        {% elif sample.status == 'Profile Generated' %}
+                            <span class="badge-status profiled">🧬 Profile Stored</span>
+                        {% elif sample.status == 'Compared' %}
+                            <span class="badge-status compared">⚖️ Compared</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                            {% if sample.status == 'Registered' or sample.status == 'PCR Running' %}
+                                <a href="{{ url_for('device', sample_ref_id=sample.evidence_id) }}" class="btn-nucleox" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">⚡ Run PCR</a>
+                            {% elif sample.status == 'PCR Complete' %}
+                                <a href="{{ url_for('profiles', sample_ref_id=sample.evidence_id) }}" class="btn-nucleox" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">🧬 STR Profile</a>
+                            {% else %}
+                                <a href="{{ url_for('profiles', sample_ref_id=sample.evidence_id) }}" class="btn-nucleox btn-nucleox-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">View Profile</a>
+                            {% endif %}
+                            <a href="{{ url_for('custody', sample_ref_id=sample.evidence_id) }}" class="btn-nucleox btn-nucleox-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">🔗 Custody</a>
+                            <a href="{{ url_for('report', sample_ref_id=sample.evidence_id) }}" class="btn-nucleox btn-nucleox-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">🖨️ Report</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        No evidence samples registered yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- TABLE 2: REFERENCE SAMPLES -->
+<div class="nucleox-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+            <h3 style="color: var(--text-bright); font-size: 1.2rem;">👤 Known Reference Samples Inventory</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Reference profiles from suspects, victims, elimination, or known individuals</p>
+        </div>
+        <a href="{{ url_for('register_reference') }}" class="btn-nucleox" style="padding: 0.4rem 0.9rem; font-size: 0.85rem;">+ New Reference</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="nucleox-table">
+            <thead>
+                <tr>
+                    <th>Reference ID</th>
+                    <th>Source Type</th>
+                    <th>Subject Label</th>
+                    <th>Operator ID</th>
+                    <th>Collection Time</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ref in reference_samples %}
+                <tr>
+                    <td><strong style="color: var(--secondary);">{{ ref.reference_id }}</strong></td>
+                    <td>
+                        <span class="badge-status" style="background: rgba(139, 92, 246, 0.15); border-color: var(--secondary); color: #c084fc;">
+                            {{ ref.source_type }}
+                        </span>
+                    </td>
+                    <td><strong>{{ ref.subject_label }}</strong></td>
+                    <td>{{ ref.operator }}</td>
+                    <td style="font-family: var(--font-mono); font-size: 0.85rem;">{{ ref.collection_time }}</td>
+                    <td>
+                        {% if ref.status == 'Registered' %}
+                            <span class="badge-status registered">Registered</span>
+                        {% elif ref.status == 'PCR Running' %}
+                            <span class="badge-status running">⚡ PCR Running</span>
+                        {% elif ref.status == 'PCR Complete' %}
+                            <span class="badge-status complete">✓ PCR Complete</span>
+                        {% elif ref.status == 'Profile Generated' %}
+                            <span class="badge-status profiled">🧬 Profile Stored</span>
+                        {% elif ref.status == 'Compared' %}
+                            <span class="badge-status compared">⚖️ Compared</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                            {% if ref.status == 'Registered' or ref.status == 'PCR Running' %}
+                                <a href="{{ url_for('device', sample_ref_id=ref.reference_id) }}" class="btn-nucleox" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">⚡ Run PCR</a>
+                            {% elif ref.status == 'PCR Complete' %}
+                                <a href="{{ url_for('profiles', sample_ref_id=ref.reference_id) }}" class="btn-nucleox" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">🧬 STR Profile</a>
+                            {% else %}
+                                <a href="{{ url_for('profiles', sample_ref_id=ref.reference_id) }}" class="btn-nucleox btn-nucleox-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">View Profile</a>
+                            {% endif %}
+                            <a href="{{ url_for('custody', sample_ref_id=ref.reference_id) }}" class="btn-nucleox btn-nucleox-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">🔗 Custody</a>
+                            <a href="{{ url_for('report', sample_ref_id=ref.reference_id) }}" class="btn-nucleox btn-nucleox-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">🖨️ Report</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        No reference samples registered yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

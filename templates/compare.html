@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">⚖️ Profile Comparison</h1>
+    <p class="page-description">Module 6 — Locus-by-locus STR profile comparison engine matching Evidence and Reference profiles.</p>
+</div>
+
+<!-- PRELIMINARY COMPARISON DISCLAIMER LABEL -->
+<div class="disclaimer-banner">
+    <span style="font-size: 1.2rem;">⚠️</span>
+    <div>
+        <strong>PRELIMINARY ANALYSIS DISCLAIMER:</strong> Preliminary comparison only — not definitive forensic identification.
+    </div>
+</div>
+
+<!-- COMPARISON SELECTOR FORM -->
+<div class="nucleox-card" style="margin-bottom: 2rem;">
+    <h3 style="color: var(--primary); margin-bottom: 1.25rem; font-size: 1.1rem;">🔍 Select Profiles for Locus Comparison</h3>
+
+    <form action="{{ url_for('compare') }}" method="POST">
+        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1.25rem; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="sample_1">Sample A (Evidence or Reference)</label>
+                <select id="sample_1" name="sample_1" class="form-control" required>
+                    <option value="">-- Choose First Profile --</option>
+                    {% for prof in profiles %}
+                        <option value="{{ prof.sample_ref_id }}" {% if prof.sample_ref_id == sample_1 %}selected{% endif %}>
+                            {{ prof.display_label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="sample_2">Sample B (Evidence or Reference)</label>
+                <select id="sample_2" name="sample_2" class="form-control" required>
+                    <option value="">-- Choose Second Profile --</option>
+                    {% for prof in profiles %}
+                        <option value="{{ prof.sample_ref_id }}" {% if prof.sample_ref_id == sample_2 %}selected{% endif %}>
+                            {{ prof.display_label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <button type="submit" class="btn-nucleox" style="padding: 0.75rem 2rem;">
+                    ⚖️ Execute Locus Comparison
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- RESULTS DISPLAY -->
+{% if result %}
+<div class="nucleox-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h3 style="color: var(--text-bright); font-size: 1.3rem;">Comparison Result Breakdown</h3>
+            <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.2rem;">
+                Comparing <strong style="color: var(--primary);">{{ sample_1 }}</strong> vs <strong style="color: var(--secondary);">{{ sample_2 }}</strong>
+            </div>
+        </div>
+
+        <div>
+            {% if result.overall == 'CONSISTENT' %}
+                <div style="background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-emerald); color: var(--accent-emerald); padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 800; font-size: 1.25rem; letter-spacing: 1px;">
+                    ✓ CONSISTENT (100% LOCUS MATCH)
+                </div>
+            {% elif result.overall == 'DIFFERENT' %}
+                <div style="background: rgba(244, 63, 94, 0.2); border: 2px solid var(--accent-rose); color: var(--accent-rose); padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 800; font-size: 1.25rem; letter-spacing: 1px;">
+                    ✖ DIFFERENT (MISMATCH DETECTED)
+                </div>
+            {% else %}
+                <div style="background: rgba(245, 158, 11, 0.2); border: 2px solid var(--accent-amber); color: var(--accent-amber); padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 800; font-size: 1.25rem; letter-spacing: 1px;">
+                    ⚠️ INCONCLUSIVE
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if result.reason %}
+        <div style="color: var(--accent-amber); margin-bottom: 1rem; padding: 0.8rem; background: rgba(245, 158, 11, 0.1); border-radius: 6px;">
+            ⚠️ {{ result.reason }}
+        </div>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="nucleox-table">
+            <thead>
+                <tr>
+                    <th>Locus Name</th>
+                    <th>{{ sample_1 }} Alleles</th>
+                    <th>{{ sample_2 }} Alleles</th>
+                    <th>Locus Evaluation</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for loc in result.loci %}
+                <tr>
+                    <td><strong style="color: var(--secondary);">{{ loc.locus }}</strong></td>
+                    <td style="font-family: var(--font-mono); font-weight: bold; color: var(--primary); font-size: 1.05rem;">{{ loc.allele_1 }}</td>
+                    <td style="font-family: var(--font-mono); font-weight: bold; color: var(--primary); font-size: 1.05rem;">{{ loc.allele_2 }}</td>
+                    <td>
+                        {% if loc.match %}
+                            <span class="badge-status complete" style="background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald); border-color: var(--accent-emerald);">
+                                ✓ MATCH
+                            </span>
+                        {% else %}
+                            <span class="badge-status" style="background: rgba(244, 63, 94, 0.2); color: var(--accent-rose); border: 1px solid var(--accent-rose);">
+                                ✖ MISMATCH
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 1.25rem; font-size: 0.85rem; color: var(--text-muted);">
+        ℹ️ Comparison automatically saved to comparisons database table and logged as a "Compared" block on the chain of custody ledger for both samples.
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

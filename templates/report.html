@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+        <a href="{{ url_for('index') }}" class="btn-nucleox btn-nucleox-secondary">← Back to Dashboard</a>
+    </div>
+    <button onclick="window.print();" class="btn-nucleox">
+        🖨️ Print Official Report / Save as PDF
+    </button>
+</div>
+
+<!-- PRINTABLE FORENSIC REPORT CONTAINER -->
+<div class="nucleox-card" style="padding: 2.5rem; background: var(--bg-card);">
+    <!-- REPORT BRANDING HEADER -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 1rem; margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div class="brand-logo-icon" style="width: 44px; height: 44px; font-size: 1.5rem;">🧬</div>
+            <div>
+                <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--text-bright); margin: 0; line-height: 1;">NucleoX</h1>
+                <div style="font-size: 0.8rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 0.2rem;">
+                    On-Spot DNA Analysis & Cryptographic Custody Summary Report
+                </div>
+            </div>
+        </div>
+        <div style="text-align: right; font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-muted);">
+            <div>Report ID: NX-REP-{{ sample.evidence_id }}</div>
+            <div>Collection Time: {{ sample.collection_time }}</div>
+        </div>
+    </div>
+
+    <!-- MANDATORY FORENSIC DISCLAIMERS -->
+    <div class="disclaimer-banner" style="margin-bottom: 2rem;">
+        <span>⚠️</span>
+        <span><strong>FORENSIC DISCLAIMER:</strong> Synthetic data for demonstration purposes only — not a validated forensic profile. Preliminary comparison only — not definitive forensic identification.</span>
+    </div>
+
+    <!-- SECTION 1: SAMPLE DEMOGRAPHICS -->
+    <div style="margin-bottom: 2rem;">
+        <h3 style="color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem; margin-bottom: 1rem; font-size: 1.1rem;">
+            1. Sample Demographics & Registration Record
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; background: rgba(30, 41, 59, 0.4); padding: 1.25rem; border-radius: 8px;">
+            <div><strong>Sample Identifier:</strong> <span style="color: var(--primary); font-weight: bold;">{{ sample.evidence_id }}</span> ({{ sample.sample_ref_type }})</div>
+            <div><strong>Sample Type / Source:</strong> {{ sample.sample_type }}</div>
+            <div><strong>Operator ID:</strong> {{ sample.operator }}</div>
+            <div><strong>Collection Time:</strong> <span style="font-family: var(--font-mono);">{{ sample.collection_time }}</span></div>
+            <div><strong>Current Processing Status:</strong> <span class="badge-status complete">{{ sample.status }}</span></div>
+            <div><strong>Sample Category:</strong> {{ sample.sample_ref_type }} Sample</div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: PCR RUN SUMMARY -->
+    <div style="margin-bottom: 2rem;">
+        <h3 style="color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem; margin-bottom: 1rem; font-size: 1.1rem;">
+            2. ESP32 Device PCR Thermocycling Telemetry Summary
+        </h3>
+        {% if latest_pcr %}
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; background: rgba(30, 41, 59, 0.4); padding: 1.25rem; border-radius: 8px;">
+            <div><strong>Telemetry Records:</strong> {{ pcr_count }} points</div>
+            <div><strong>Final Temperature:</strong> {{ latest_pcr.temperature }} °C</div>
+            <div><strong>Cycles Completed:</strong> {{ latest_pcr.cycle_number }} / 30</div>
+            <div><strong>Hardware Run Status:</strong> {{ latest_pcr.run_status }}</div>
+            <div><strong>Progress Percent:</strong> {{ latest_pcr.progress_percent }}%</div>
+            <div><strong>Completion Time:</strong> <span style="font-family: var(--font-mono);">{{ latest_pcr.timestamp }}</span></div>
+        </div>
+        {% else %}
+        <p style="color: var(--text-muted);">No PCR thermocycling telemetry logged for this sample.</p>
+        {% endif %}
+    </div>
+
+    <!-- SECTION 3: STR PIPELINE EXECUTION STEPS -->
+    <div style="margin-bottom: 2rem;">
+        <h3 style="color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem; margin-bottom: 1rem; font-size: 1.1rem;">
+            3. 5-Stage STR Profiling Pipeline Steps
+        </h3>
+        {% if pipeline_runs %}
+        <table class="nucleox-table">
+            <thead>
+                <tr>
+                    <th>Stage Name</th>
+                    <th>Stage Status</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for run in pipeline_runs %}
+                <tr>
+                    <td><strong style="color: var(--text-bright);">{{ run.stage }}</strong></td>
+                    <td><span class="badge-status complete">✓ {{ run.stage_status }}</span></td>
+                    <td style="font-family: var(--font-mono); font-size: 0.85rem;">{{ run.timestamp }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: var(--text-muted);">STR pipeline steps logged automatically upon execution.</p>
+        {% endif %}
+    </div>
+
+    <!-- SECTION 4: DNA PROFILE TABLE (5 LOCI) -->
+    <div style="margin-bottom: 2rem;">
+        <h3 style="color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem; margin-bottom: 1rem; font-size: 1.1rem;">
+            4. 5-Locus STR Forensic Profile Call Results
+        </h3>
+
+        {% if profile %}
+        <table class="nucleox-table">
+            <thead>
+                <tr>
+                    <th>Locus Name</th>
+                    <th>Allele 1</th>
+                    <th>Allele 2</th>
+                    <th>Full Allele Designation</th>
+                    <th>Profile Generated Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set loci = [
+                    ('TH01', profile.locus_1),
+                    ('vWA', profile.locus_2),
+                    ('TPOX', profile.locus_3),
+                    ('CSF1PO', profile.locus_4),
+                    ('D16S539', profile.locus_5)
+                ] %}
+                {% for name, alleles in loci %}
+                {% set parts = alleles.split(',') %}
+                <tr>
+                    <td><strong style="color: var(--secondary);">{{ name }}</strong></td>
+                    <td style="font-family: var(--font-mono);">{{ parts[0].strip() if parts|length > 0 else '-' }}</td>
+                    <td style="font-family: var(--font-mono);">{{ parts[1].strip() if parts|length > 1 else '-' }}</td>
+                    <td style="font-family: var(--font-mono); font-weight: bold; color: var(--primary);">{{ alleles }}</td>
+                    <td style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-muted);">{{ profile.generated_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: var(--text-muted);">No DNA profile generated for this sample yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- SECTION 5: PROFILE COMPARISONS -->
+    <div style="margin-bottom: 2rem;">
+        <h3 style="color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem; margin-bottom: 1rem; font-size: 1.1rem;">
+            5. Profile Comparisons & Matching History
+        </h3>
+        {% if comparisons %}
+        <table class="nucleox-table">
+            <thead>
+                <tr>
+                    <th>Sample 1</th>
+                    <th>Sample 2</th>
+                    <th>Comparison Evaluation Result</th>
+                    <th>Compared Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for comp in comparisons %}
+                <tr>
+                    <td><strong style="color: var(--primary);">{{ comp.evidence_id }}</strong></td>
+                    <td><strong style="color: var(--secondary);">{{ comp.reference_id_or_evidence_id_2 }}</strong></td>
+                    <td>
+                        {% if comp.result == 'CONSISTENT' %}
+                            <span class="badge-status complete">✓ CONSISTENT (MATCH)</span>
+                        {% else %}
+                            <span class="badge-status" style="background: rgba(244, 63, 94, 0.2); color: var(--accent-rose); border: 1px solid var(--accent-rose);">✖ DIFFERENT</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-family: var(--font-mono); font-size: 0.85rem;">{{ comp.compared_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: var(--text-muted);">No profile comparison records on file for this sample.</p>
+        {% endif %}
+    </div>
+
+    <!-- SECTION 6: BLOCKCHAIN CUSTODY TIMELINE & INTEGRITY -->
+    <div style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem; margin-bottom: 1rem;">
+            <h3 style="color: var(--primary); font-size: 1.1rem; margin: 0;">
+                6. Cryptographic SHA-256 Blockchain Custody Ledger
+            </h3>
+            <span class="badge-status complete">
+                {% if chain_verification.is_valid %}✅ Chain Integrity Validated{% else %}🚨 Chain Tamper Alert{% endif %}
+            </span>
+        </div>
+
+        <table class="nucleox-table">
+            <thead>
+                <tr>
+                    <th>Block #</th>
+                    <th>Event Description</th>
+                    <th>Timestamp</th>
+                    <th>SHA-256 Block Hash</th>
+                    <th>Previous Block Hash</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in custody_blocks %}
+                <tr>
+                    <td><strong style="color: var(--primary);">#{{ b.block_index }}</strong></td>
+                    <td><strong>{{ b.event_name }}</strong></td>
+                    <td style="font-family: var(--font-mono); font-size: 0.8rem;">{{ b.event_timestamp }}</td>
+                    <td style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--primary);" title="{{ b.block_hash }}">
+                        {{ b.block_hash[:12] }}...
+                    </td>
+                    <td style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);" title="{{ b.previous_hash }}">
+                        {% if b.previous_hash == '0' %}0 (Genesis){% else %}{{ b.previous_hash[:12] }}...{% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="color: var(--text-muted);">No custody blocks recorded.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- SIGNATURE FOOTER -->
+    <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px dashed var(--border-color); display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+        <div>
+            <div>____________________________</div>
+            <div>Analyzing Forensic Operator Signature</div>
+        </div>
+        <div>
+            <div>____________________________</div>
+            <div>Laboratory Verification Officer</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

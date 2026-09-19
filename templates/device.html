@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div id="device-monitor-view">
+    <div class="page-header">
+        <h1 class="page-title">⚡ ESP32 Device Monitor & PCR Control</h1>
+        <p class="page-description">Module 3 — Real-time telemetry receiver for portable DNA PCR thermocycler hardware over USB serial.</p>
+    </div>
+
+    <!-- DEVICE CONTROL BAR -->
+    <div class="nucleox-card" style="margin-bottom: 1.5rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="sample_select">Select Evidence or Reference Sample</label>
+                <select id="sample_select" class="form-control" onchange="window.location.href='/device?sample_ref_id=' + this.value;">
+                    <option value="">-- Choose Sample to Process --</option>
+                    {% for sample in samples %}
+                        <option value="{{ sample.id }}" {% if sample.id == selected_id %}selected{% endif %}>
+                            {{ sample.label }} (Status: {{ sample.status }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="port_select">ESP32 Hardware USB Serial Port</label>
+                <select id="port_select" class="form-control">
+                    {% for port in available_ports %}
+                        <option value="{{ port }}">{{ port }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <button id="start-pcr-btn" class="btn-nucleox" style="width: 100%;" {% if not selected_id %}disabled{% endif %}>
+                    ⚡ Start PCR Thermal Run
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% if selected_sample %}
+    <div class="disclaimer-banner" style="margin-bottom: 1.5rem; background: rgba(6, 182, 212, 0.1); border-left-color: var(--primary);">
+        <span>ℹ️</span> <strong>Active Processing Sample:</strong> {{ selected_sample.display_label }} | Operator: {{ selected_sample.operator }} | Status: <strong>{{ selected_sample.status }}</strong>
+    </div>
+    {% endif %}
+
+    <!-- METRICS DISPLAY GRID -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon amber">🌡️</div>
+            <div>
+                <div id="metric-temp" class="metric-val">-- °C</div>
+                <div class="metric-label">Chamber Temperature</div>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon cyan">🔄</div>
+            <div>
+                <div id="metric-cycle" class="metric-val">0 / 30</div>
+                <div class="metric-label">Thermal Cycle</div>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon purple">📊</div>
+            <div>
+                <div id="metric-progress" class="metric-val">0.0%</div>
+                <div class="metric-label">PCR Progress</div>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon emerald">📡</div>
+            <div>
+                <div id="metric-status" class="metric-val" style="font-size: 1.1rem; text-transform: uppercase;">Idle</div>
+                <div class="metric-label">Device Telemetry Status</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROGRESS BAR CARD -->
+    <div class="nucleox-card" style="padding: 1rem 1.5rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+            <span>0% (Initial Ramp)</span>
+            <span>50% (Cycle 15)</span>
+            <span>100% (PCR Complete)</span>
+        </div>
+        <div style="width: 100%; height: 12px; background: rgba(255, 255, 255, 0.08); border-radius: 6px; overflow: hidden;">
+            <div id="pcr-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.5s ease;"></div>
+        </div>
+    </div>
+
+    <!-- LIVE THERMAL CURVE GRAPH -->
+    <div class="nucleox-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="color: var(--text-bright); font-size: 1.1rem;">📈 Real-Time Chamber Thermal Curve (°C vs. Time)</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);">
+                Denaturation 95°C | Annealing 55°C | Extension 72°C
+            </span>
+        </div>
+
+        <div class="pcr-graph-container">
+            <canvas id="thermalCanvas"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NucleoX — On-Spot DNA Analysis System</title>
+    <!-- Modern Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS Styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- PERSISTENT BRANDING HEADER NAVBAR -->
+    <header class="nucleox-navbar">
+        <a href="{{ url_for('index') }}" class="brand-container">
+            <div class="brand-logo-icon">🧬</div>
+            <div class="brand-text-container">
+                <div class="brand-title">Nucleo<span>X</span></div>
+                <div class="brand-subtitle">On-Spot DNA Analysis System</div>
+            </div>
+        </a>
+
+        <ul class="nav-menu">
+            <li><a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">📊 Dashboard</a></li>
+            <li><a href="{{ url_for('register') }}" class="nav-link {% if request.endpoint == 'register' %}active{% endif %}">🧪 New Sample</a></li>
+            <li><a href="{{ url_for('register_reference') }}" class="nav-link {% if request.endpoint == 'register_reference' %}active{% endif %}">👤 Ref Sample</a></li>
+            <li><a href="{{ url_for('device') }}" class="nav-link {% if request.endpoint == 'device' %}active{% endif %}">⚡ Run Device</a></li>
+            <li><a href="{{ url_for('profiles') }}" class="nav-link {% if request.endpoint == 'profiles' %}active{% endif %}">🧬 STR Profiling</a></li>
+            <li><a href="{{ url_for('compare') }}" class="nav-link {% if request.endpoint == 'compare' %}active{% endif %}">⚖️ Compare</a></li>
+            <li><a href="{{ url_for('custody') }}" class="nav-link {% if request.endpoint == 'custody' %}active{% endif %}">🔗 Chain of Custody</a></li>
+        </ul>
+
+        <div class="hardware-status-badge">
+            <span class="status-dot"></span>
+            <span>ESP32 Ready</span>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-container">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="disclaimer-banner" style="background: rgba(16, 185, 129, 0.15); border-left-color: var(--accent-emerald); color: var(--text-bright);">
+                        <span>ℹ️</span> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <p><strong>NucleoX</strong> — Portable DNA Processing & Evidence Management System | Student Prototype for Demonstration</p>
+    </footer>
+
+    <!-- Main Client JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

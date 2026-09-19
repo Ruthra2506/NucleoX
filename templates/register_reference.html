@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">👤 Reference Sample Registration</h1>
+    <p class="page-description">Module 2 — Register known reference samples (Suspect, Victim, Elimination, Known) to compare against crime scene evidence.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; align-items: start;">
+    <!-- REFERENCE REGISTRATION FORM -->
+    <div class="nucleox-card">
+        <h3 style="color: var(--secondary); margin-bottom: 1.25rem; font-size: 1.1rem;">📝 New Reference Sample Entry</h3>
+
+        <form action="{{ url_for('register_reference') }}" method="POST">
+            <div class="form-group">
+                <label class="form-label" for="reference_id">Reference ID (Auto-Generated)</label>
+                <input type="text" id="reference_id" name="reference_id" class="form-control" value="{{ next_id }}" required style="font-weight: bold; color: var(--secondary);">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="source_type">Source Type</label>
+                <select id="source_type" name="source_type" class="form-control" required>
+                    <option value="Suspect">Suspect</option>
+                    <option value="Victim">Victim</option>
+                    <option value="Elimination">Elimination Sample</option>
+                    <option value="Known">Known Individual</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="subject_label">Subject Label (Synthetic/Placeholder)</label>
+                <input type="text" id="subject_label" name="subject_label" class="form-control" placeholder="e.g. Suspect A, Victim B, Staff Elimination" value="Suspect A" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="operator">Operator ID / Name</label>
+                <input type="text" id="operator" name="operator" class="form-control" placeholder="e.g. OP-109 (Tech. Chen)" value="OP-109 (Tech. Chen)" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="collection_time">Collection Date & Time</label>
+                <input type="text" id="collection_time" name="collection_time" class="form-control" placeholder="YYYY-MM-DD HH:MM:SS" style="font-family: var(--font-mono);">
+                <script>
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const dtInput = document.getElementById('collection_time');
+                        if (dtInput && !dtInput.value) {
+                            const now = new Date();
+                            dtInput.value = now.toISOString().slice(0, 19).replace('T', ' ');
+                        }
+                    });
+                </script>
+            </div>
+
+            <button type="submit" class="btn-nucleox" style="width: 100%; margin-top: 0.5rem; background: linear-gradient(135deg, var(--secondary), var(--primary));">
+                💾 Save Reference & Log Custody Block
+            </button>
+        </form>
+    </div>
+
+    <!-- REGISTERED REFERENCE SAMPLES TABLE -->
+    <div class="nucleox-card">
+        <h3 style="color: var(--text-bright); margin-bottom: 1rem; font-size: 1.1rem;">📋 Known Reference Samples Catalog</h3>
+        
+        <div class="table-responsive">
+            <table class="nucleox-table">
+                <thead>
+                    <tr>
+                        <th>Reference ID</th>
+                        <th>Source Type</th>
+                        <th>Subject Label</th>
+                        <th>Operator</th>
+                        <th>Collection Timestamp</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ref in reference_samples %}
+                    <tr>
+                        <td><strong style="color: var(--secondary);">{{ ref.reference_id }}</strong></td>
+                        <td>
+                            <span class="badge-status" style="background: rgba(139, 92, 246, 0.15); border-color: var(--secondary); color: #c084fc;">
+                                {{ ref.source_type }}
+                            </span>
+                        </td>
+                        <td><strong>{{ ref.subject_label }}</strong></td>
+                        <td>{{ ref.operator }}</td>
+                        <td style="font-family: var(--font-mono); font-size: 0.85rem;">{{ ref.collection_time }}</td>
+                        <td>
+                            {% if ref.status == 'Registered' %}
+                                <span class="badge-status registered">Registered</span>
+                            {% elif ref.status == 'PCR Running' %}
+                                <span class="badge-status running">⚡ PCR Running</span>
+                            {% elif ref.status == 'PCR Complete' %}
+                                <span class="badge-status complete">✓ PCR Complete</span>
+                            {% elif ref.status == 'Profile Generated' %}
+                                <span class="badge-status profiled">🧬 Profile Stored</span>
+                            {% else %}
+                                <span class="badge-status compared">⚖️ {{ ref.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                            No reference samples registered yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

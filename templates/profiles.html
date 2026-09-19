@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🧬 STR Profiling Simulation</h1>
+    <p class="page-description">Module 4 — Simulated 5-stage STR profiling pipeline, capillary electrophoresis electropherogram peaks, and locus allele calling.</p>
+</div>
+
+<!-- MANDATORY FORENSIC DISCLAIMER LABEL -->
+<div class="disclaimer-banner">
+    <span style="font-size: 1.2rem;">⚠️</span>
+    <div>
+        <strong>DEMONSTRATION DISCLAIMER:</strong> Synthetic data for demonstration purposes only — not a validated forensic profile.
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; align-items: start;">
+    <!-- SELECT & EXECUTE STR PIPELINE PANEL -->
+    <div class="nucleox-card">
+        <h3 style="color: var(--primary); margin-bottom: 1.25rem; font-size: 1.1rem;">⚡ Select Sample & Pipeline Control</h3>
+
+        <form action="{{ url_for('profiles') }}" method="GET">
+            <div class="form-group">
+                <label class="form-label" for="sample_ref_id">Select Evidence or Reference Sample</label>
+                <select id="sample_ref_id" name="sample_ref_id" class="form-control" onchange="this.form.submit();">
+                    <option value="">-- Select Sample (PCR Complete) --</option>
+                    {% for sample in samples %}
+                        <option value="{{ sample.id }}" {% if sample.id == selected_id %}selected{% endif %}>
+                            {{ sample.label }} (Status: {{ sample.status }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+
+        {% if selected_id %}
+            {% if selected_sample %}
+                <div style="margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: rgba(30, 41, 59, 0.6); border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">Sample Info</div>
+                    <div style="font-weight: bold; color: var(--text-bright);">{{ selected_sample.display_label }}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">Status: <span class="badge-status complete">{{ selected_sample.status }}</span></div>
+                </div>
+            {% endif %}
+
+            {% if not profile %}
+                <button id="run-str-btn" class="btn-nucleox" data-sample-id="{{ selected_id }}" style="width: 100%;">
+                    🧬 Execute 5-Stage STR Profiling Pipeline
+                </button>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center;">
+                    Runs Extraction → PCR Amplification → Capillary Electrophoresis → Allele Calling → Profile Generated.
+                </p>
+            {% else %}
+                <div style="text-align: center; padding: 1rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px;">
+                    <div style="color: var(--accent-emerald); font-weight: bold; font-size: 1rem;">✓ Profile Generated & Stored</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">Timestamp: {{ profile.generated_at }}</div>
+                </div>
+                <button id="run-str-btn" class="btn-nucleox btn-nucleox-secondary" data-sample-id="{{ selected_id }}" style="width: 100%; margin-top: 1rem;">
+                    🔄 Re-Run STR Pipeline Simulation
+                </button>
+            {% endif %}
+        {% endif %}
+
+        <!-- STEPPED PIPELINE PROGRESS LIST -->
+        <div style="margin-top: 1.5rem;">
+            <h4 style="color: var(--text-bright); font-size: 0.95rem; margin-bottom: 0.75rem;">📋 5-Stage Pipeline Sequence</h4>
+            <div id="pipeline-steps-container">
+                {% set stage_names = ["1. DNA Extraction", "2. PCR Amplification", "3. Capillary Electrophoresis", "4. Allele Calling", "5. Profile Generated"] %}
+                {% for stage_label in stage_names %}
+                    <div class="pipeline-step-item" style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.8rem; margin-bottom: 0.4rem; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem;">
+                        <span style="color: var(--text-main);">{{ stage_label }}</span>
+                        {% if profile %}
+                            <span style="color: var(--accent-emerald); font-weight: bold;">✓ Complete</span>
+                        {% else %}
+                            <span style="color: var(--text-muted);">Pending</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE RESULTS DISPLAY (ELECTROPHEROGRAM & LOCUS TABLE) -->
+    <div class="nucleox-card">
+        {% if profile %}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <h3 style="color: var(--text-bright); font-size: 1.2rem;">
+                    DNA Profile: <span style="color: var(--primary);">{{ profile.sample_ref_id }}</span>
+                </h3>
+                <a href="{{ url_for('report', sample_ref_id=profile.sample_ref_id) }}" class="btn-nucleox btn-nucleox-secondary" style="padding: 0.3rem 0.7rem; font-size: 0.85rem;">
+                    🖨️ Printable Report
+                </a>
+            </div>
+
+            <!-- 5-LOCUS ALLELE TABLE -->
+            <h4 style="color: var(--primary); font-size: 1rem; margin-bottom: 0.5rem;">📊 Call Allele Results Table (5 Standard Forensic Loci)</h4>
+            <div class="table-responsive" style="margin-bottom: 2rem;">
+                <table class="nucleox-table">
+                    <thead>
+                        <tr>
+                            <th>Locus Name</th>
+                            <th>Allele Pair (Derived)</th>
+                            <th>Chromosomal Location</th>
+                            <th>Call Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong style="color: var(--secondary);">TH01</strong></td>
+                            <td style="font-family: var(--font-mono); font-weight: bold; color: var(--primary); font-size: 1.05rem;">{{ profile.locus_1 }}</td>
+                            <td style="color: var(--text-muted); font-size: 0.85rem;">11p15.5</td>
+                            <td><span class="badge-status complete">High Confidence</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color: var(--secondary);">vWA</strong></td>
+                            <td style="font-family: var(--font-mono); font-weight: bold; color: var(--primary); font-size: 1.05rem;">{{ profile.locus_2 }}</td>
+                            <td style="color: var(--text-muted); font-size: 0.85rem;">12p13.31</td>
+                            <td><span class="badge-status complete">High Confidence</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color: var(--secondary);">TPOX</strong></td>
+                            <td style="font-family: var(--font-mono); font-weight: bold; color: var(--primary); font-size: 1.05rem;">{{ profile.locus_3 }}</td>
+                            <td style="color: var(--text-muted); font-size: 0.85rem;">2p25.3</td>
+                            <td><span class="badge-status complete">High Confidence</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color: var(--secondary);">CSF1PO</strong></td>
+                            <td style="font-family: var(--font-mono); font-weight: bold; color: var(--primary); font-size: 1.05rem;">{{ profile.locus_4 }}</td>
+                            <td style="color: var(--text-muted); font-size: 0.85rem;">5q33.1</td>
+                            <td><span class="badge-status complete">High Confidence</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color: var(--secondary);">D16S539</strong></td>
+                            <td style="font-family: var(--font-mono); font-weight: bold; color: var(--primary); font-size: 1.05rem;">{{ profile.locus_5 }}</td>
+                            <td style="color: var(--text-muted); font-size: 0.85rem;">16q24.1</td>
+                            <td><span class="badge-status complete">High Confidence</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- SIMULATED CAPILLARY ELECTROPHEROGRAM PEAK CHARTS -->
+            {% if peaks %}
+                <h4 style="color: var(--secondary); font-size: 1rem; margin-bottom: 0.75rem;">📈 Simulated Capillary Electropherogram (Fluorescence RFU vs. Base-Pairs)</h4>
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    {% for locus, locus_peaks in peaks.items() %}
+                        <div style="background: rgba(9, 13, 22, 0.9); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.9rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <strong style="color: var(--primary); font-size: 0.95rem;">Locus: {{ locus }}</strong>
+                                <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">Laser Channel 1 (520nm Blue)</span>
+                            </div>
+
+                            <!-- Peak visualization bar chart -->
+                            <div style="display: flex; align-items: flex-end; gap: 1.5rem; height: 110px; border-bottom: 2px solid var(--border-color); padding-bottom: 4px; padding-top: 10px;">
+                                {% for p in locus_peaks %}
+                                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%;">
+                                        <span style="font-size: 0.7rem; color: var(--accent-emerald); font-family: var(--font-mono);">{{ p.rfu_height }} RFU</span>
+                                        <div style="width: 18px; height: {{ (p.rfu_height / 24.0) | round }}px; max-height: 75px; min-height: 8px; background: {% if p.allele == 'Artifact' %}rgba(148, 163, 184, 0.4){% else %}linear-gradient(to top, var(--primary), var(--secondary)){% endif %}; border-radius: 4px 4px 0 0; box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);"></div>
+                                        <span style="font-size: 0.75rem; font-weight: bold; color: {% if p.allele == 'Artifact' %}var(--text-muted){% else %}var(--text-bright){% endif %}; margin-top: 4px;">
+                                            Allele {{ p.allele }}
+                                        </span>
+                                        <span style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono);">{{ p.position_bp }} bp</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+        {% else %}
+            <div style="text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+                <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🧬</div>
+                <h3 style="color: var(--text-bright); margin-bottom: 0.5rem;">No Profile Generated Yet</h3>
+                <p style="font-size: 0.95rem; max-width: 480px; margin: 0 auto;">
+                    Select an Evidence or Reference sample on the left that has completed PCR thermal cycling, then click <strong>Execute 5-Stage STR Profiling Pipeline</strong>.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ALL STORED PROFILES CATALOG -->
+<div class="nucleox-card" style="margin-top: 2rem;">
+    <h3 style="color: var(--text-bright); margin-bottom: 1rem; font-size: 1.1rem;">📚 All Stored Profiles Catalog</h3>
+    <div class="table-responsive">
+        <table class="nucleox-table">
+            <thead>
+                <tr>
+                    <th>Sample / Ref ID</th>
+                    <th>Type / Label</th>
+                    <th>Operator</th>
+                    <th>TH01</th>
+                    <th>vWA</th>
+                    <th>TPOX</th>
+                    <th>CSF1PO</th>
+                    <th>D16S539</th>
+                    <th>Generated Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prof in all_profiles %}
+                <tr>
+                    <td><strong style="color: var(--primary);">{{ prof.sample_ref_id }}</strong></td>
+                    <td><span class="badge-status" style="background: rgba(139, 92, 246, 0.15); border-color: var(--secondary); color: #c084fc;">{{ prof.display_label }}</span></td>
+                    <td>{{ prof.operator }}</td>
+                    <td style="font-family: var(--font-mono); color: var(--primary); font-weight: bold;">{{ prof.locus_1 }}</td>
+                    <td style="font-family: var(--font-mono); color: var(--primary); font-weight: bold;">{{ prof.locus_2 }}</td>
+                    <td style="font-family: var(--font-mono); color: var(--primary); font-weight: bold;">{{ prof.locus_3 }}</td>
+                    <td style="font-family: var(--font-mono); color: var(--primary); font-weight: bold;">{{ prof.locus_4 }}</td>
+                    <td style="font-family: var(--font-mono); color: var(--primary); font-weight: bold;">{{ prof.locus_5 }}</td>
+                    <td style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-muted);">{{ prof.generated_at }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                        No profiles generated yet in the database.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
